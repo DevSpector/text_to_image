@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 """
-String → Bits → Pixels → Image
-
-Converts any string into a deterministic image using only the string's data.
-No randomness or external style choices.
-
 Usage:
     python main.py "your string here"
 or (if no argument):
@@ -18,6 +13,8 @@ import hashlib
 import numpy as np
 from PIL import Image
 
+# ============================================================
+
 # Try to import scipy for fast convolution, fallback to pure numpy
 try:
     from scipy.ndimage import convolve
@@ -25,6 +22,7 @@ try:
 except ImportError:
     HAVE_SCIPY = False
 
+# ============================================================
 
 def string_to_bits(s: str) -> list[int]:
     """Convert string to UTF-8 bytes and then to a list of bits (MSB first)."""
@@ -34,7 +32,6 @@ def string_to_bits(s: str) -> list[int]:
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
     return bits
-
 
 def compute_parameters(bits: list[int]) -> dict:
     """Compute various statistical parameters from the bit sequence."""
@@ -67,7 +64,6 @@ def compute_parameters(bits: list[int]) -> dict:
         'freq_zeros': zeros / N if N else 0,
     }
 
-
 def build_bit_matrix(bits: list[int]) -> np.ndarray:
     """Arrange bits into a near‑square matrix, padding with zeros."""
     N = len(bits)
@@ -81,6 +77,7 @@ def build_bit_matrix(bits: list[int]) -> np.ndarray:
     padded = bits + [0] * (total - N)
     return np.array(padded, dtype=np.uint8).reshape(height, width)
 
+# ============================================================
 
 def generate_kernels(bits: list[int], num: int = 3, size: int = 3) -> list[np.ndarray]:
     """
@@ -102,7 +99,6 @@ def generate_kernels(bits: list[int], num: int = 3, size: int = 3) -> list[np.nd
         kernels.append(arr)
     return kernels
 
-
 def convolve2d(matrix: np.ndarray, kernel: np.ndarray, mode='same') -> np.ndarray:
     """
     2D convolution with handling of borders (zero padding).
@@ -123,6 +119,7 @@ def convolve2d(matrix: np.ndarray, kernel: np.ndarray, mode='same') -> np.ndarra
                 out[i, j] = np.sum(window * kernel)
         return out
 
+# ============================================================
 
 def normalize(arr: np.ndarray) -> np.ndarray:
     """Normalize array to [0,1] range."""
@@ -132,7 +129,6 @@ def normalize(arr: np.ndarray) -> np.ndarray:
     if max_val - min_val < 1e-12:
         return np.zeros_like(arr)
     return (arr - min_val) / (max_val - min_val)
-
 
 def generate_coefficients(s: str, count: int) -> list[float]:
     """Deterministically produce coefficients in [0,1] from the string hash."""
@@ -146,6 +142,7 @@ def generate_coefficients(s: str, count: int) -> list[float]:
         coeffs.append(val)
     return coeffs
 
+# ============================================================
 
 def string_to_image(s: str) -> Image.Image:
     """Main pipeline: string -> bits -> matrix -> transformations -> RGB image."""
@@ -212,6 +209,7 @@ def string_to_image(s: str) -> Image.Image:
 
     return Image.fromarray(img_arr, mode='RGB')
 
+# ============================================================
 
 def main():
     if len(sys.argv) > 1:
@@ -238,6 +236,7 @@ def main():
     except Exception:
         pass
 
+# ============================================================
 
 if __name__ == "__main__":
     main()
